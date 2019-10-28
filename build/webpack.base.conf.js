@@ -1,7 +1,9 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HappyPack = require("happypack");
 const os = require("os");
+const happyThreadPool = HappyPack.ThreadPool({ size: os.cpus().length });
 
 module.exports = {
   entry: "./src/index.js", // string | object | array  // 这里应用程序开始执行
@@ -27,32 +29,48 @@ module.exports = {
         // cnpm i babel-loader @babel/core @babel/preset-env -D
         test: /\.jsx?$/,
         exclude: /node_modules/,
-        use: {
-          loader: "babel-loader"
-        }
-      },
-      {
-        test: /\.(css|less)$/,
-        exclude: /node_modules/,
         use: [
-          "style-loader", // 创建style标签，并将css添加进去
-          "css-loader" // 编译css]
+          {
+            loader: "happypack/loader?id=happyBabel"
+          }
         ]
       },
       {
-        //antd样式处理
-        test: /\.css$/,
-        exclude: /src/,
+        test: /\.(c|le)ss$/,
         use: [
-          { loader: "style-loader" },
+          MiniCssExtractPlugin.loader,
+          "css-loader", // 编译css
+          "less-loader", // 编译scss
           {
-            loader: "css-loader",
+            loader: "postcss-loader",
             options: {
-              importLoaders: 1
+              plugins: [require("autoprefixer")]
             }
           }
         ]
       },
+      // {
+      //   test: /\.(css|less)$/,
+      //   exclude: /node_modules/,
+      //   use: [
+      //     "style-loader", // 创建style标签，并将css添加进去
+      //     "css-loader" // 编译css]
+      //   ]
+      // },
+      // {
+      //   //antd样式处理
+      //   test: /\.css$/,
+      //   exclude: /src/,
+      //   use: [
+      //     { loader: "style-loader" },
+      //     {
+      //       loader: "css-loader",
+      //       options: {
+      //         importLoaders: 1
+      //       }
+      //     }
+      //   ]
+      // },
       {
         test: /\.(png|jpg|jpeg|gif|svg)/,
         exclude: /node_modules/,
@@ -83,20 +101,20 @@ module.exports = {
   },
 
   plugins: [
-    // new HappyPack({
-    //   //用id来标识 happypack处理那里类文件
-    //   id: "happyBabel",
-    //   //如何处理  用法和loader 的配置一样
-    //   loaders: [
-    //     {
-    //       loader: "babel-loader?cacheDirectory=true"
-    //     }
-    //   ],
-    //   //共享进程池threadPool: HappyThreadPool 代表共享进程池，即多个 HappyPack 实例都使用同一个共享进程池中的子进程去处理任务，以防止资源占用过多。
-    //   threadPool: happyThreadPool,
-    //   //允许 HappyPack 输出日志
-    //   verbose: true
-    // }),
+    new HappyPack({
+      //用id来标识 happypack处理那里类文件
+      id: "happyBabel",
+      //如何处理  用法和loader 的配置一样
+      loaders: [
+        {
+          loader: "babel-loader?cacheDirectory=true"
+        }
+      ],
+      //共享进程池threadPool: HappyThreadPool 代表共享进程池，即多个 HappyPack 实例都使用同一个共享进程池中的子进程去处理任务，以防止资源占用过多。
+      threadPool: happyThreadPool,
+      //允许 HappyPack 输出日志
+      verbose: true
+    }),
     new HtmlWebpackPlugin({
       filename: "index.html", // 最终创建的文件名
       template: path.resolve(__dirname, "../index.html"), // 指定模板路径
@@ -104,6 +122,10 @@ module.exports = {
       title: "yezi"
       // file: 'index.html', //打造单页面运用 最后运行的不是这个
       // template: 'src/index.html'  //vue-cli放在跟目录下
+    }),
+    new MiniCssExtractPlugin({
+      filename: "[name].css",
+      chunkFilename: "[id].css"
     })
   ]
 };
